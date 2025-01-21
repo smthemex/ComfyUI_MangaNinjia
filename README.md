@@ -1,13 +1,56 @@
 # ComfyUI_MangaNinjia
 ComfyUI_MangaNinjia is a ComfyUI node of [MangaNinja](https://github.com/ali-vilab/MangaNinjia) which‌ is a " Line Art Colorization with Precise Reference Following " method。
 
-# Coming soon
+# 1. Installation
 
-# Example
+In the ./ComfyUI /custom_node directory, run the following:   
+```
+git clone https://github.com/smthemex/ComfyUI_MangaNinjia.git
+```
+---
+
+# 2. Requirements  
+* no need, because it's base in sd1.5 and controlnet,Perhaps someone may be missing the library.没什么特殊的库,懒得删了
+```
+pip install -r requirements.txt
+```
+
+# 3. Models
+* sd1.5 [address](https://modelscope.cn/models/AI-ModelScope/stable-diffusion-v1-5/files) v1-5-pruned-emaonly.safetensors #example
+* controlnet lineart [address](https://huggingface.co/lllyasviel/control_v11p_sd15_lineart/tree/main)   control_v11p_sd15_lineart_fp16.safetensors  #example
+* Annotators [address](https://huggingface.co/lllyasviel/Annotators/blob/main/sk_model.pth)   sk_model.pth #example
+* MangaNinjia [address](https://huggingface.co/Johanan0528/MangaNinjia/tree/main)  #example
+* clipvison   [address](https://huggingface.co/openai/clip-vit-large-patch14/tree/main) #clip-vit-large-patch14  #有空改成单体
+ 
+```
+--  ComfyUI/models/checkpoints
+    |-- any sd1.5 safetensors #任意sd1.5模型，注意要带vae的
+--  ComfyUI/models/controlnet
+    |-- control_v11p_sd15_lineart_fp16.safetensors or control_v11p_sd15s2_lineart_anime_fp16.safetensors
+--  ComfyUI/models/MangaNinjia
+        |-- denoising_unet.pth
+        |-- reference_unet.pth
+        |-- point_net.pthnaz
+        |-- controlnet.pth
+        |-- sk_model.pth
+-- any/path/clip-vit-large-patch14   #or auto download 
+        |--config.json
+        |--tokenizer.json
+        |--tokenizer_config.json
+        |--vocab.json
+        |--special_tokens_map.json
+        |--preprocessor_config.json
+        |--model.safetensors
+```
+# 4.Tips
+* is_lineart :  if True you can link a normal image at lineart_image. 开启is_lineart，会自动预处理图片为线稿
+
+  
+# 5.Example
 ![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/example.png)
 
 
-# Citation
+# 6.Citation
 ```
 @article{liu2025manganinja,
   title={MangaNinja: Line Art Colorization with Precise Reference Following},
