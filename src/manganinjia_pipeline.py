@@ -38,12 +38,12 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         controlnet: ControlNetModel,
         denoising_unet: UNet2DConditionModel,
         vae: AutoencoderKL,
-        refnet_tokenizer: CLIPTokenizer,
-        refnet_text_encoder: CLIPTextModel,
-        refnet_image_encoder: CLIPVisionModelWithProjection,
-        controlnet_tokenizer: CLIPTokenizer,
-        controlnet_text_encoder: CLIPTextModel,
-        controlnet_image_encoder: CLIPVisionModelWithProjection,
+        # refnet_tokenizer: CLIPTokenizer,
+        # refnet_text_encoder: CLIPTextModel,
+        # refnet_image_encoder: CLIPVisionModelWithProjection,
+        # controlnet_tokenizer: CLIPTokenizer,
+        # controlnet_text_encoder: CLIPTextModel,
+        # controlnet_image_encoder: CLIPVisionModelWithProjection,
         scheduler: DDIMScheduler,
         point_net: PointNet
     ):
@@ -54,12 +54,12 @@ class MangaNinjiaPipeline(DiffusionPipeline):
             controlnet=controlnet,
             denoising_unet=denoising_unet,       
             vae=vae,
-            refnet_tokenizer=refnet_tokenizer,
-            refnet_text_encoder=refnet_text_encoder,
-            refnet_image_encoder=refnet_image_encoder,
-            controlnet_tokenizer=controlnet_tokenizer,
-            controlnet_text_encoder=controlnet_text_encoder,
-            controlnet_image_encoder=controlnet_image_encoder,
+            # refnet_tokenizer=refnet_tokenizer,
+            # refnet_text_encoder=refnet_text_encoder,
+            # refnet_image_encoder=refnet_image_encoder,
+            # controlnet_tokenizer=controlnet_tokenizer,
+            # controlnet_text_encoder=controlnet_text_encoder,
+            # controlnet_image_encoder=controlnet_image_encoder,
             point_net=point_net,
             scheduler=scheduler,
         )
@@ -84,6 +84,10 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         generator=None,
         point_ref=None,
         point_main=None,
+        controlnet_encoder_hidden_states=None,
+        controlnet_uncond_encoder_hidden_states=None,
+        refnet_encoder_hidden_states=None,
+        refnet_uncond_encoder_hidden_states=None,
     ) -> MangaNinjiaPipelineOutput:
 
         device = self.device
@@ -91,45 +95,45 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         input_size = raw2.size
         point_ref=point_ref.float().to(device)
         point_main=point_main.float().to(device)
-        def img2embeds(img, image_enc):
-            clip_image = self.clip_image_processor.preprocess(
-                img, return_tensors="pt"
-            ).pixel_values
-            clip_image_embeds = image_enc(
-                clip_image.to(device, dtype=image_enc.dtype)
-            ).image_embeds
-            encoder_hidden_states = clip_image_embeds.unsqueeze(1)
-            return encoder_hidden_states
-        if self.reference_unet:
-            refnet_encoder_hidden_states = img2embeds(ref1, self.refnet_image_encoder)
-        else:
-            refnet_encoder_hidden_states = None
-        if self.controlnet:
-            controlnet_encoder_hidden_states = img2embeds(ref1, self.controlnet_image_encoder)
-        else:
-            controlnet_encoder_hidden_states = None
+        # def img2embeds(img, image_enc):
+        #     clip_image = self.clip_image_processor.preprocess(
+        #         img, return_tensors="pt"
+        #     ).pixel_values
+        #     clip_image_embeds = image_enc(
+        #         clip_image.to(device, dtype=image_enc.dtype)
+        #     ).image_embeds
+        #     encoder_hidden_states = clip_image_embeds.unsqueeze(1)
+        #     return encoder_hidden_states
+        # if self.reference_unet:
+        #     refnet_encoder_hidden_states = img2embeds(ref1, self.refnet_image_encoder)
+        # else:
+        #     refnet_encoder_hidden_states = None
+        # if self.controlnet:
+        #     controlnet_encoder_hidden_states = img2embeds(ref1, self.controlnet_image_encoder)
+        # else:
+        #     controlnet_encoder_hidden_states = None
 
-        prompt = ""
-        def prompt2embeds(prompt, tokenizer, text_encoder):
-            text_inputs = tokenizer(
-                prompt,
-                padding="do_not_pad",
-                max_length=tokenizer.model_max_length,
-                truncation=True,
-                return_tensors="pt",
-            )
-            text_input_ids = text_inputs.input_ids.to(device) #[1,2]
-            empty_text_embed = text_encoder(text_input_ids)[0].to(self.dtype)
-            uncond_encoder_hidden_states = empty_text_embed.repeat((1, 1, 1))[:,0,:].unsqueeze(0)
-            return uncond_encoder_hidden_states
-        if self.reference_unet:
-            refnet_uncond_encoder_hidden_states = prompt2embeds(prompt, self.refnet_tokenizer, self.refnet_text_encoder)
-        else:
-            refnet_uncond_encoder_hidden_states = None
-        if self.controlnet:
-            controlnet_uncond_encoder_hidden_states = prompt2embeds(prompt, self.controlnet_tokenizer, self.controlnet_text_encoder)
-        else:
-            controlnet_uncond_encoder_hidden_states = None
+        # prompt = ""
+        # def prompt2embeds(prompt, tokenizer, text_encoder):
+        #     text_inputs = tokenizer(
+        #         prompt,
+        #         padding="do_not_pad",
+        #         max_length=tokenizer.model_max_length,
+        #         truncation=True,
+        #         return_tensors="pt",
+        #     )
+        #     text_input_ids = text_inputs.input_ids.to(device) #[1,2]
+        #     empty_text_embed = text_encoder(text_input_ids)[0].to(self.dtype)
+        #     uncond_encoder_hidden_states = empty_text_embed.repeat((1, 1, 1))[:,0,:].unsqueeze(0)
+        #     return uncond_encoder_hidden_states
+        # if self.reference_unet:
+        #     refnet_uncond_encoder_hidden_states = prompt2embeds(prompt, self.refnet_tokenizer, self.refnet_text_encoder)
+        # else:
+        #     refnet_uncond_encoder_hidden_states = None
+        # if self.controlnet:
+        #     controlnet_uncond_encoder_hidden_states = prompt2embeds(prompt, self.controlnet_tokenizer, self.controlnet_text_encoder)
+        # else:
+        #     controlnet_uncond_encoder_hidden_states = None
 
         do_classifier_free_guidance = guidance_scale_ref > 1.0
         
@@ -183,10 +187,10 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         
         # load the model to cpu
         self.point_net.to("cpu")
-        self.refnet_image_encoder.to("cpu")
-        self.refnet_text_encoder.to("cpu")
-        self.controlnet_image_encoder.to("cpu")
-        self.controlnet_text_encoder.to("cpu")
+        # self.refnet_image_encoder.to("cpu")
+        # self.refnet_text_encoder.to("cpu")
+        # self.controlnet_image_encoder.to("cpu")
+        # self.controlnet_text_encoder.to("cpu")
         gc.collect()
         torch.cuda.empty_cache()
         # classifier guidance
@@ -458,6 +462,7 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         torch.cuda.empty_cache()
 
         # clip prediction
+        self.vae.to("cuda")
         edit2 = self.decode_RGB(noisy_edit2_latents)
         edit2 = torch.clip(edit2, -1.0, 1.0)
 
@@ -479,6 +484,7 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         # generator = None
         rgb_latent = self.vae.encode(rgb_in).latent_dist.sample(generator)
         rgb_latent = rgb_latent * self.rgb_latent_scale_factor
+        self.vae.to("cpu")
         return rgb_latent
     
     def decode_RGB(self, rgb_latent: torch.Tensor) -> torch.Tensor:
