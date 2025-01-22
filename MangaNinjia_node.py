@@ -54,10 +54,10 @@ class MangaNinjiaLoader:
         if not clip:    
             raise "no clip"
         print("***********Start MangaNinjia Loader**************")
-        pipe,preprocessor,refnet_tokenizer,refnet_text_encoder,refnet_image_encoder=nijia_loader(MangaNinjia_weigths_path,
+        pipe,preprocessor,refnet_tokenizer,refnet_text_encoder,refnet_image_encoder,vae=nijia_loader(MangaNinjia_weigths_path,
         sd_config,controlnet_model_name_or_path,clip,device,ckpt_path,original_config_file,sd_config)
         print("***********MangaNinjia Loader is Done**************")
-        model={"pipe":pipe,"preprocessor":preprocessor,"refnet_tokenizer":refnet_tokenizer,"refnet_text_encoder":refnet_text_encoder,"refnet_image_encoder":refnet_image_encoder}
+        model={"pipe":pipe,"preprocessor":preprocessor,"refnet_tokenizer":refnet_tokenizer,"refnet_text_encoder":refnet_text_encoder,"refnet_image_encoder":refnet_image_encoder,"vae":vae}
         gc.collect()
         torch.cuda.empty_cache()
         return (model,)
