@@ -1,6 +1,11 @@
 # ComfyUI_MangaNinjia
 ComfyUI_MangaNinjia is a ComfyUI node of [MangaNinja](https://github.com/ali-vilab/MangaNinjia) which‌ is a " Line Art Colorization with Precise Reference Following " method。
 
+# update
+* 拆解流程，将峰值显存占用压到8G左右,8G显存是否能跑，要其他用户测试一下才行。 
+* Disassemble the process and reduce the peak memory usage to around 8GB. Other users need to test whether 8GB of memory can run.
+
+
 # 1. Installation
 
 In the ./ComfyUI /custom_node directory, run the following:   
