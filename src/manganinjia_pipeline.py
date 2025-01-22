@@ -25,8 +25,7 @@ from .models.refunet_2d_condition import RefUNet2DConditionModel
 
 
 class MangaNinjiaPipelineOutput(BaseOutput):
-    img_np: np.ndarray
-    img_pil: Image.Image
+    latent: torch.Tensor
     to_save_dict: dict
 
 
@@ -37,7 +36,7 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         reference_unet: RefUNet2DConditionModel,
         controlnet: ControlNetModel,
         denoising_unet: UNet2DConditionModel,
-        vae: AutoencoderKL,
+        #vae: AutoencoderKL,
         # refnet_tokenizer: CLIPTokenizer,
         # refnet_text_encoder: CLIPTextModel,
         # refnet_image_encoder: CLIPVisionModelWithProjection,
@@ -53,7 +52,7 @@ class MangaNinjiaPipeline(DiffusionPipeline):
             reference_unet=reference_unet,
             controlnet=controlnet,
             denoising_unet=denoising_unet,       
-            vae=vae,
+            #vae=vae,
             # refnet_tokenizer=refnet_tokenizer,
             # refnet_text_encoder=refnet_text_encoder,
             # refnet_image_encoder=refnet_image_encoder,
@@ -88,10 +87,15 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         controlnet_uncond_encoder_hidden_states=None,
         refnet_encoder_hidden_states=None,
         refnet_uncond_encoder_hidden_states=None,
+        ref1_latents=None,
     ) -> MangaNinjiaPipelineOutput:
+        controlnet_encoder_hidden_states=controlnet_encoder_hidden_states
+        controlnet_uncond_encoder_hidden_states=controlnet_uncond_encoder_hidden_states
+        refnet_encoder_hidden_states=refnet_encoder_hidden_states
+        refnet_uncond_encoder_hidden_states=refnet_uncond_encoder_hidden_states
 
         device = self.device
-        
+        self.ref1_latents=ref1_latents
         input_size = raw2.size
         point_ref=point_ref.float().to(device)
         point_main=point_main.float().to(device)
@@ -256,7 +260,8 @@ class MangaNinjiaPipeline(DiffusionPipeline):
                 preprocessor=preprocessor,
                 generator=generator,
                 point_ref=point_ref,
-                point_main=point_main
+                point_main=point_main,
+                ref1_latents=self.ref1_latents,
             )
             for k, v in to_save_dict.items():
                 if k =='edge2_black':
@@ -275,19 +280,18 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         
         # ----------------- Post processing -----------------        
         # Convert to numpy
-        img_pred = img_pred.squeeze().cpu().numpy().astype(np.float32)
-        img_pred_np = (((img_pred + 1.) / 2.) * 255).astype(np.uint8)
-        img_pred_np = chw2hwc(img_pred_np)
-        img_pred_pil = Image.fromarray(img_pred_np)
+        # img_pred = img_pred.squeeze().cpu().numpy().astype(np.float32)
+        # img_pred_np = (((img_pred + 1.) / 2.) * 255).astype(np.uint8)
+        # img_pred_np = chw2hwc(img_pred_np)
+        # img_pred_pil = Image.fromarray(img_pred_np)
 
         # Resize back to original resolution
-        if match_input_res:
-            img_pred_pil = img_pred_pil.resize(input_size)
-            img_pred_np = np.asarray(img_pred_pil)        
+        # if match_input_res:
+        #     img_pred_pil = img_pred_pil.resize(input_size)
+        #     #img_pred_np = np.asarray(img_pred_pil)        
 
         return MangaNinjiaPipelineOutput(
-            img_np=img_pred_np,
-            img_pil=img_pred_pil,
+            latent=img_pred,
             to_save_dict=to_save_dict
         )
 
@@ -350,7 +354,8 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         preprocessor,
         generator,
         point_ref,
-        point_main
+        point_main,
+        ref1_latents
     ):
         do_classifier_free_guidance = guidance_scale_ref > 1.0
         device = ref1.device
@@ -363,7 +368,7 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         timesteps = self.scheduler.timesteps  # [T]
         
         # encode image
-        ref1_latents = self.encode_RGB(ref1, generator=generator) # 1/8 Resolution with a channel nums of 4. 
+        #ref1_latents = self.encode_RGB(ref1, generator=generator) # 1/8 Resolution with a channel nums of 4. 
         edge2_src = raw2
 
         timesteps_add,_=self.get_timesteps(num_inference_steps, 1.0, device, denoising_start=None)
@@ -462,14 +467,14 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         torch.cuda.empty_cache()
 
         # clip prediction
-        self.vae.to("cuda")
-        edit2 = self.decode_RGB(noisy_edit2_latents)
-        edit2 = torch.clip(edit2, -1.0, 1.0)
+        # self.vae.to("cuda")
+        # edit2 = self.decode_RGB(noisy_edit2_latents)
+        # edit2 = torch.clip(edit2, -1.0, 1.0)
 
-        return edit2, to_save_dict
+        return noisy_edit2_latents, to_save_dict
         
     
-    def encode_RGB(self, rgb_in: torch.Tensor, generator) -> torch.Tensor:
+    def encode_RGB(self,rgb_in: torch.Tensor, generator) -> torch.Tensor:
         """
         Encode RGB image into latent.
 
@@ -482,10 +487,12 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         """
         
         # generator = None
-        rgb_latent = self.vae.encode(rgb_in).latent_dist.sample(generator)
+        rgb_latent =self.encode(rgb_in).latent_dist.sample(generator)
         rgb_latent = rgb_latent * self.rgb_latent_scale_factor
         self.vae.to("cpu")
         return rgb_latent
+               
+   
     
     def decode_RGB(self, rgb_latent: torch.Tensor) -> torch.Tensor:
         """
@@ -498,6 +505,7 @@ class MangaNinjiaPipeline(DiffusionPipeline):
         Returns:
             `torch.Tensor`: Decoded depth map.
         """
+       
 
         rgb_latent = rgb_latent / self.rgb_latent_scale_factor
         rgb_out = self.vae.decode(rgb_latent, return_dict=False)[0]
