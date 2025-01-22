@@ -139,7 +139,6 @@ def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,ima
     vae=pipe.vae
 
 
-
     # vae = AutoencoderKL.from_pretrained(
     #     repo,
     #     subfolder='vae'
@@ -201,13 +200,13 @@ def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,ima
     #     low_cpu_mem_usage=False,
     #     ignore_mismatched_sizes=True
     # )
-    del cn_dict,Unet
+    del cn_dict,Unet,pipe
     gc.collect()
     torch.cuda.empty_cache()
 
-    controlnet_tokenizer = CLIPTokenizer.from_pretrained(image_encoder_path)
-    controlnet_text_encoder = CLIPTextModel.from_pretrained(image_encoder_path)
-    controlnet_image_encoder = CLIPVisionModelWithProjection.from_pretrained(image_encoder_path)
+    # controlnet_tokenizer = CLIPTokenizer.from_pretrained(image_encoder_path)
+    # controlnet_text_encoder = CLIPTextModel.from_pretrained(image_encoder_path)
+    # controlnet_image_encoder = CLIPVisionModelWithProjection.from_pretrained(image_encoder_path)
         
     point_net=PointNet()
 
@@ -232,22 +231,47 @@ def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,ima
             controlnet=controlnet,
             denoising_unet=denoising_unet,  
             vae=vae,
-            refnet_tokenizer=refnet_tokenizer,
-            refnet_text_encoder=refnet_text_encoder,
-            refnet_image_encoder=refnet_image_encoder,
-            controlnet_tokenizer=controlnet_tokenizer,
-            controlnet_text_encoder=controlnet_text_encoder,
-            controlnet_image_encoder=controlnet_image_encoder,
+            # refnet_tokenizer=refnet_tokenizer,
+            # refnet_text_encoder=refnet_text_encoder,
+            # refnet_image_encoder=refnet_image_encoder,
+            # controlnet_tokenizer=controlnet_tokenizer,
+            # controlnet_text_encoder=controlnet_text_encoder,
+            # controlnet_image_encoder=controlnet_image_encoder,
             scheduler=noise_scheduler,
             point_net=point_net
         )
     
     #pipe = pipe.to(torch.device(device))
     pipe.enable_xformers_memory_efficient_attention()
-    return pipe,preprocessor
+    return pipe,preprocessor,refnet_tokenizer,refnet_text_encoder,refnet_image_encoder
 
+def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_lineart_paths,denoise_steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point,device):
+     #pre data
+    pipe=model.get("pipe")
+    
+    preprocessor=model.get("preprocessor")
+    refnet_image_encoder=model.get("refnet_image_encoder")
+    refnet_text_encoder=model.get("refnet_text_encoder")
+    refnet_tokenizer=model.get("refnet_tokenizer")
 
-def infer_main (pipe,preprocessor,ref_image_list,lineart_image_list,point_ref_paths,point_lineart_paths,denoise_steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point):
+    refnet_image_encoder=refnet_image_encoder.to(device)
+    refnet_text_encoder=refnet_text_encoder.to(device)
+
+    HALF=True
+    dtype = torch.float16 if  HALF else torch.float32
+    controlnet_uncond_encoder_hidden_states = prompt2embeds("", refnet_tokenizer, refnet_text_encoder,device,dtype)
+    refnet_uncond_encoder_hidden_states= prompt2embeds("", refnet_tokenizer, refnet_text_encoder,device,dtype)
+
+    controlnet_encoder_hidden_states=img2embeds(ref_image_list[0], refnet_image_encoder,device) #TO DO
+    refnet_encoder_hidden_states=img2embeds(ref_image_list[0], refnet_image_encoder,device) # TO DO more image
+
+    refnet_image_encoder.to("cpu")
+    refnet_text_encoder.to("cpu")
+
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    pipe.to(device=device)
     #args = parser.parse_args()
     output_dir = folder_paths.get_output_directory()
 
@@ -313,6 +337,10 @@ def infer_main (pipe,preprocessor,ref_image_list,lineart_image_list,point_ref_pa
                 generator=generator,
                 point_ref=point_ref,  
                 point_main=point_main,  
+                controlnet_encoder_hidden_states=controlnet_encoder_hidden_states,
+                controlnet_uncond_encoder_hidden_states=controlnet_uncond_encoder_hidden_states,
+                refnet_encoder_hidden_states=refnet_encoder_hidden_states,
+                refnet_uncond_encoder_hidden_states=refnet_uncond_encoder_hidden_states,
             )
 
             if os.path.exists(colored_save_path):
@@ -323,4 +351,32 @@ def infer_main (pipe,preprocessor,ref_image_list,lineart_image_list,point_ref_pa
             lineart_list.append(lineart)
             #image.save(colored_save_path)
             #lineart.save(lineart_save_path)
+    pipe.to("cpu") # move pipe to cpu 
     return image_list,lineart_list
+
+from transformers import CLIPImageProcessor
+clip_image_processor=CLIPImageProcessor()
+
+def img2embeds(img, image_enc,device):
+
+    clip_image = clip_image_processor.preprocess(
+        img, return_tensors="pt"
+    ).pixel_values
+    clip_image_embeds = image_enc(
+        clip_image.to(device, dtype=image_enc.dtype)
+    ).image_embeds
+    encoder_hidden_states = clip_image_embeds.unsqueeze(1)
+    return encoder_hidden_states
+
+def prompt2embeds(prompt, tokenizer, text_encoder,device,dtype):
+    text_inputs = tokenizer(
+        prompt,
+        padding="do_not_pad",
+        max_length=tokenizer.model_max_length,
+        truncation=True,
+        return_tensors="pt",
+    )
+    text_input_ids = text_inputs.input_ids.to(device) #[1,2]
+    empty_text_embed = text_encoder(text_input_ids)[0].to(dtype)
+    uncond_encoder_hidden_states = empty_text_embed.repeat((1, 1, 1))[:,0,:].unsqueeze(0)
+    return uncond_encoder_hidden_states
