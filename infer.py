@@ -9,6 +9,7 @@ from tqdm.auto import tqdm
 from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection
 import torch.nn as nn
 from .src.manganinjia_pipeline import MangaNinjiaPipeline
+from .src.image_util import resize_max_res,chw2hwc
 from diffusers import (
     ControlNetModel,
     StableDiffusionPipeline,
@@ -230,7 +231,7 @@ def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,ima
             reference_unet=reference_unet,
             controlnet=controlnet,
             denoising_unet=denoising_unet,  
-            vae=vae,
+            #ae=vae,
             # refnet_tokenizer=refnet_tokenizer,
             # refnet_text_encoder=refnet_text_encoder,
             # refnet_image_encoder=refnet_image_encoder,
@@ -243,7 +244,7 @@ def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,ima
     
     #pipe = pipe.to(torch.device(device))
     pipe.enable_xformers_memory_efficient_attention()
-    return pipe,preprocessor,refnet_tokenizer,refnet_text_encoder,refnet_image_encoder
+    return pipe,preprocessor,refnet_tokenizer,refnet_text_encoder,refnet_image_encoder,vae
 
 def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_lineart_paths,denoise_steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point,device):
      #pre data
@@ -267,12 +268,14 @@ def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_li
 
     refnet_image_encoder.to("cpu")
     refnet_text_encoder.to("cpu")
-
+    vae=model.get("vae")
+    vae.to(device)
+    processing_res=512
+    rgb_latent_scale_factor = 0.18215
+    
     gc.collect()
     torch.cuda.empty_cache()
 
-    pipe.to(device=device)
-    #args = parser.parse_args()
     output_dir = folder_paths.get_output_directory()
 
     if seed is None:
@@ -280,6 +283,9 @@ def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_li
 
         seed = int(time.time())
     generator = torch.cuda.manual_seed(seed)
+
+    ref1_latents=encode_RGB(vae,ref_image_list[0],processing_res, generator,device,rgb_latent_scale_factor,torch.float32)
+
     # -------------------- Device --------------------
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -287,8 +293,9 @@ def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_li
         device = torch.device("cpu")
         logging.warning("CUDA is not available. Running on CPU will be slow.")
     logging.info(f"device = {device}")
-
+    pipe.to(device=device)
     
+
     # -------------------- Inference and saving --------------------
     with torch.no_grad():
         image_list=[]
@@ -341,18 +348,24 @@ def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_li
                 controlnet_uncond_encoder_hidden_states=controlnet_uncond_encoder_hidden_states,
                 refnet_encoder_hidden_states=refnet_encoder_hidden_states,
                 refnet_uncond_encoder_hidden_states=refnet_uncond_encoder_hidden_states,
+                ref1_latents=ref1_latents
             )
 
             if os.path.exists(colored_save_path):
                 logging.warning(f"Existing file: '{colored_save_path}' will be overwritten")
-            image = pipe_out.img_pil
+            image = pipe_out.latent
             lineart = pipe_out.to_save_dict['edge2_black']
             image_list.append(image)
             lineart_list.append(lineart)
             #image.save(colored_save_path)
             #lineart.save(lineart_save_path)
+    vae.to(device)
+    out_list=[]
+    for i in image_list:
+        img=latent2pil(vae,i,rgb_latent_scale_factor)
+        out_list.append(img)
     pipe.to("cpu") # move pipe to cpu 
-    return image_list,lineart_list
+    return out_list,lineart_list
 
 from transformers import CLIPImageProcessor
 clip_image_processor=CLIPImageProcessor()
@@ -380,3 +393,63 @@ def prompt2embeds(prompt, tokenizer, text_encoder,device,dtype):
     empty_text_embed = text_encoder(text_input_ids)[0].to(dtype)
     uncond_encoder_hidden_states = empty_text_embed.repeat((1, 1, 1))[:,0,:].unsqueeze(0)
     return uncond_encoder_hidden_states
+
+def encode_RGB(vae,ref1,processing_res, generator,device,rgb_latent_scale_factor,dtype) -> torch.Tensor:
+    """
+    Encode RGB image into latent.
+
+    Args:
+        rgb_in (`torch.Tensor`):
+            Input RGB image to be encoded.
+
+    Returns:
+        `torch.Tensor`: Image latent.
+    """
+    def resize_img(img):
+            img = resize_max_res(img, max_edge_resolution=processing_res)
+            return img
+    ref1 = resize_img(ref1)
+    def normalize_img(img):
+        img = img.convert("RGB")
+        img = np.array(img)
+
+        # Normalize RGB Values.
+        rgb = np.transpose(img,(2,0,1))
+        rgb_norm = rgb / 255.0 * 2.0 - 1.0
+        rgb_norm = torch.from_numpy(rgb_norm).to(dtype)
+        rgb_norm = rgb_norm.to(device)
+        img = rgb_norm
+        assert img.min() >= -1.0 and img.max() <= 1.0
+        return img
+    ref1=normalize_img(ref1)
+    # generator = None
+    rgb_latent = vae.encode(ref1[None]).latent_dist.sample(generator)
+    rgb_latent = rgb_latent * rgb_latent_scale_factor
+    vae.to("cpu")
+    return rgb_latent
+
+
+def latent2pil(vae,rgb_latent,rgb_latent_scale_factor):
+    def decode_RGB(vae, rgb_latent: torch.Tensor,rgb_latent_scale_factor) -> torch.Tensor:
+        """
+        Decode depth latent into depth map.
+
+        Args:
+            rgb_latent (`torch.Tensor`):
+                Depth latent to be decoded.
+
+        Returns:
+            `torch.Tensor`: Decoded depth map.
+        """
+
+        rgb_latent = rgb_latent / rgb_latent_scale_factor
+        rgb_out = vae.decode(rgb_latent, return_dict=False)[0]
+        return rgb_out
+
+    edit2 = decode_RGB(vae,rgb_latent,rgb_latent_scale_factor)
+    img_pred = torch.clip(edit2, -1.0, 1.0)
+    img_pred = img_pred.squeeze().cpu().numpy().astype(np.float32)
+    img_pred_np = (((img_pred + 1.) / 2.) * 255).astype(np.uint8)
+    img_pred_np = chw2hwc(img_pred_np)
+    img_pred_pil = Image.fromarray(img_pred_np)
+    return img_pred_pil
