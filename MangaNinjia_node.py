@@ -54,9 +54,10 @@ class MangaNinjiaLoader:
         if not clip:    
             raise "no clip"
         print("***********Start MangaNinjia Loader**************")
-        pipe,preprocessor=nijia_loader(MangaNinjia_weigths_path,sd_config,controlnet_model_name_or_path,clip,device,ckpt_path,original_config_file,sd_config)
+        pipe,preprocessor,refnet_tokenizer,refnet_text_encoder,refnet_image_encoder=nijia_loader(MangaNinjia_weigths_path,
+        sd_config,controlnet_model_name_or_path,clip,device,ckpt_path,original_config_file,sd_config)
         print("***********MangaNinjia Loader is Done**************")
-        model={"pipe":pipe,"preprocessor":preprocessor}
+        model={"pipe":pipe,"preprocessor":preprocessor,"refnet_tokenizer":refnet_tokenizer,"refnet_text_encoder":refnet_text_encoder,"refnet_image_encoder":refnet_image_encoder}
         gc.collect()
         torch.cuda.empty_cache()
         return (model,)
@@ -119,10 +120,6 @@ class MangaNinjiaSampler:
     
     def sampler_main(self, model,image,lineart_image,seed,width,height,guidance_scale_ref,guidance_scale_point,steps,is_lineart):
         
-        #pre data
-        pipe=model.get("pipe")
-        pipe.to(device=device)
-        preprocessor=model.get("preprocessor")
        
         ref_image_list=tensor2pil_list(image,width,height)
         lineart_image_list=tensor2pil_list(lineart_image,width,height)
@@ -130,9 +127,9 @@ class MangaNinjiaSampler:
 
         point_ref_paths,point_lineart_paths=None,None
         print("***********Start MangaNinjia Sampler**************")
-        iamge,lineart=infer_main(pipe,preprocessor,ref_image_list,lineart_image_list,point_ref_paths,point_lineart_paths,steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point)
+        iamge,lineart=infer_main(model,ref_image_list,lineart_image_list,point_ref_paths,point_lineart_paths,steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point,device)
         
-        pipe.to("cpu")# move pipe to cpu 
+        
         gc.collect()
         torch.cuda.empty_cache()
         return (load_images(iamge),load_images(lineart),)
