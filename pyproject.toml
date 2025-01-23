@@ -1,16 +1,15 @@
 [project]
 name = "comfyui_manganinjia"
-description = "
-ComfyUI_MangaNinjia is a ComfyUI node of MangaNinja which  is a Line Art Colorization with Precise Reference Following method."
+description = "ComfyUI_MangaNinjia is a ComfyUI node of MangaNinja which  is a Line Art Colorization with Precise Reference Following method."
 version = "1.0.0"
 license = { file = "LICENSE" }
 dependencies = ["accelerate", "diffusers", "#gradio==3.39.0", "#gradio-client==1.3.0", "#h5py==3.11.0", "#huggingface-hub==0.24.6", "imageio", "imageio-ffmpeg", "importlib-metadata", "importlib-resources", "ipdb", "ipython", "ipywidgets", "kornia", "#kornia-rs==0.1.5", "omegaconf", "opencv-python", "pandas", "pillow", "scikit-image", "scikit-learn", "scipy", "torch", "torchaudio", "torchmetrics", "torchvision", "tqdm", "transformers", "einops", "basicsr"]
 
 [project.urls]
-Repository = "https://github.com/comfyanonymous/ComfyUI"
+Repository = "https://github.com/smthemex/ComfyUI_MangaNinjia"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
 PublisherId = "smthemex"
-DisplayName = "ComfyUI"
+DisplayName = "ComfyUI_MangaNinjia"
 Icon = ""
