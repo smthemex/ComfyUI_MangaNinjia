@@ -276,7 +276,7 @@ def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_li
     gc.collect()
     torch.cuda.empty_cache()
 
-    output_dir = folder_paths.get_output_directory()
+    #output_dir = folder_paths.get_output_directory()
 
     if seed is None:
         import time
@@ -303,20 +303,22 @@ def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_li
         for i in range(len(ref_image_list)):
             # save path
            
-            rgb_name_prefix  =''.join(random.choice("0123456789") for _ in range(6))
-            pred_name_base = rgb_name_prefix + "_colorized"
-            lineart_name_base = rgb_name_prefix + "_lineart"
-            colored_save_path = os.path.join(
-                output_dir, f"{pred_name_base}.png"
-            )
-            lineart_save_path = os.path.join(
-                output_dir, f"{lineart_name_base}.png"
-            )
+            # rgb_name_prefix  =''.join(random.choice("0123456789") for _ in range(6))
+            # pred_name_base = rgb_name_prefix + "_colorized"
+            # lineart_name_base = rgb_name_prefix + "_lineart"
+            # colored_save_path = os.path.join(
+            #     output_dir, f"{pred_name_base}.png"
+            # )
+            # lineart_save_path = os.path.join(
+            #     output_dir, f"{lineart_name_base}.png"
+            # )
             if point_ref_paths is not None:# 手动映射，比较讨厌
                 point_ref_path = point_ref_paths[i]
                 point_lineart_path = point_lineart_paths[i]
-                point_ref = torch.from_numpy(np.load(point_ref_path)).unsqueeze(0).unsqueeze(0)
-                point_main = torch.from_numpy(np.load(point_lineart_path)).unsqueeze(0).unsqueeze(0)
+                
+                point_main = point_ref_path.unsqueeze(0)
+                point_ref = point_lineart_path.unsqueeze(0)
+                # point_main = torch.from_numpy(np.load(point_lineart_path)).unsqueeze(0).unsqueeze(0)
             else:
                 matrix1 = np.zeros((512, 512), dtype=np.uint8)
                 matrix2 = np.zeros((512, 512), dtype=np.uint8)
@@ -351,8 +353,8 @@ def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_li
                 ref1_latents=ref1_latents
             )
 
-            if os.path.exists(colored_save_path):
-                logging.warning(f"Existing file: '{colored_save_path}' will be overwritten")
+            # if os.path.exists(colored_save_path):
+            #     logging.warning(f"Existing file: '{colored_save_path}' will be overwritten")
             image = pipe_out.latent
             lineart = pipe_out.to_save_dict['edge2_black']
             image_list.append(image)
