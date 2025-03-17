@@ -73,6 +73,7 @@ class MangaNinjiaSampler:
                 "model": ("MODEL_MangaNinjia",),
                 "image": ("IMAGE",),
                 "lineart_image": ("IMAGE",),
+                
                 "seed": ("INT", {"default": 0, "min": 0, "max": MAX_SEED}),
                 "width": ("INT", {
                     "default": 512,
@@ -111,6 +112,11 @@ class MangaNinjiaSampler:
                 }),
                 "is_lineart": ("BOOLEAN", {"default": True},),
                          },
+            "optional": {
+                "mask": ("MASK",),# B H W 
+                "lineart_mask": ("MASK",),
+            }
+
         }
     
     RETURN_TYPES = ("IMAGE", "IMAGE")
@@ -118,14 +124,20 @@ class MangaNinjiaSampler:
     FUNCTION = "sampler_main"
     CATEGORY = "MangaNinjia"
     
-    def sampler_main(self, model,image,lineart_image,seed,width,height,guidance_scale_ref,guidance_scale_point,steps,is_lineart):
+    def sampler_main(self, model,image,lineart_image,seed,width,height,guidance_scale_ref,guidance_scale_point,steps,is_lineart,**kwargs):
         
-       
+        mask=kwargs.get("mask")
+        lineart_mask=kwargs.get("lineart_mask")
+
         ref_image_list=tensor2pil_list(image,width,height)
         lineart_image_list=tensor2pil_list(lineart_image,width,height)
         ref_image_list,lineart_image_list=equalize_lists(ref_image_list,lineart_image_list)
+        if isinstance(mask,torch.Tensor) and isinstance(lineart_mask,torch.Tensor):
+            point_ref_paths=[mask]
+            point_lineart_paths=[lineart_mask]
+        else:   
+            point_ref_paths,point_lineart_paths=None,None
 
-        point_ref_paths,point_lineart_paths=None,None
         print("***********Start MangaNinjia Sampler**************")
         iamge,lineart=infer_main(model,ref_image_list,lineart_image_list,point_ref_paths,point_lineart_paths,steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point,device)
         
