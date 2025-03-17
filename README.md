@@ -2,9 +2,8 @@
 ComfyUI_MangaNinjia is a ComfyUI node of [MangaNinja](https://github.com/ali-vilab/MangaNinjia) which‌ is a " Line Art Colorization with Precise Reference Following " method。
 
 # update
-* 拆解流程，将峰值显存占用压到8G左右,8G显存是否能跑，要其他用户测试一下才行。 
-* Disassemble the process and reduce the peak memory usage to around 8GB. Other users need to test whether 8GB of memory can run.
-
+* 坐标参考在comfy里实现麻烦，主要是要前端实现gradio的蒙版多图层，我就偷懒用一个蒙版吧。 如果使用外接蒙版（在参考图和线稿同一物理位置，用蒙版编辑点一个点）作为位置参考，guidance_scale_point>15,guidance_scale_ref>9,如果不使用，则guidance_scale_point>9,guidance_scale_ref>15，参数自己调节到合适的。guidance_scale_point是倾向于用线稿和参考图的位置点来上色，guidance_scale_ref是主要用参考图来上色;
+* Coordinate reference is troublesome to implement in comfy, mainly to implement the multi-layer mask of gradio on the front end, so I'm lazy to use a mask. If you use an external mask (at the same physical location as the reference diagram and line artwork, edit a point with the mask) as the position reference, guidance_scale_point> 15,guidance_scale_ref>9, and if you don't, guidance_scale_point>9,guidance_scale_ref>15. The parameters are adjusted to the appropriate one. guidance_scale_point tend to use line drawings and reference drawings for coloring, guidance_scale_ref mainly use reference drawings for coloring;
 
 # 1. Installation
 
@@ -48,10 +47,13 @@ pip install -r requirements.txt
         |--model.safetensors
 ```
 # 4.Tips
-* is_lineart :  if True you can link a normal image at lineart_image. 开启is_lineart，会自动预处理图片为线稿
+* is_lineart :  if False you can link a normal image at lineart_image. 关闭is_lineart，会自动预处理图片为线稿
 
   
 # 5.Example
+* new
+![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/exampleA.png)
+* old
 ![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/example.png)
 
 
