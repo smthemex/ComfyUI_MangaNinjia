@@ -29,7 +29,7 @@ class MangaNinjiaLoader:
         return {
             "required": {
                 "checkpoint": (["none"] + folder_paths.get_filename_list("checkpoints"),),
-                "clip": ("STRING", {"default": "openai/clip-vit-large-patch14"}),
+                "clip": (["none"] + folder_paths.get_filename_list("clip"),),
                 "controlnet": (["none"] + folder_paths.get_filename_list("controlnet"),),
             },
         }
@@ -51,11 +51,14 @@ class MangaNinjiaLoader:
             controlnet_model_name_or_path=folder_paths.get_full_path("controlnet",controlnet)
         else:
             raise "no checkpoint"
-        if not clip:    
+        
+        if clip!="none": 
+            clip_path=folder_paths.get_full_path("clip",clip)
+        else:   
             raise "no clip"
         print("***********Start MangaNinjia Loader**************")
         pipe,preprocessor,refnet_tokenizer,refnet_text_encoder,refnet_image_encoder,vae=nijia_loader(MangaNinjia_weigths_path,
-        sd_config,controlnet_model_name_or_path,clip,device,ckpt_path,original_config_file,sd_config)
+        sd_config,controlnet_model_name_or_path,clip_path,device,ckpt_path,original_config_file,sd_config)
         print("***********MangaNinjia Loader is Done**************")
         model={"pipe":pipe,"preprocessor":preprocessor,"refnet_tokenizer":refnet_tokenizer,"refnet_text_encoder":refnet_text_encoder,"refnet_image_encoder":refnet_image_encoder,"vae":vae}
         gc.collect()
