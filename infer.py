@@ -6,7 +6,8 @@ import torch
 import gc
 from PIL import Image
 from tqdm.auto import tqdm
-from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection
+from transformers import CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection,CLIPVisionConfig,CLIPTextConfig
+from safetensors.torch import load_file
 import torch.nn as nn
 from .src.manganinjia_pipeline import MangaNinjiaPipeline
 from .src.image_util import resize_max_res,chw2hwc
@@ -22,102 +23,8 @@ from .src.models.refunet_2d_condition import RefUNet2DConditionModel
 from .src.point_network import PointNet
 from .src.annotator.lineart import BatchLineartDetector
 import folder_paths
+current_node_path = os.path.dirname(os.path.abspath(__file__))
 
-# if "__main__" == __name__:
-#     logging.basicConfig(level=logging.INFO)
-
-#     # -------------------- Arguments --------------------
-#     parser = argparse.ArgumentParser(
-#         description="Run single-image MangaNinjia"
-#     )
-#     parser.add_argument(
-#         "--output_dir", type=str, required=True, help="Output directory."
-#     )
-
-#     # inference setting
-#     parser.add_argument(
-#         "--denoise_steps",
-#         type=int,
-#         default=50,  # quantitative evaluation uses 50 steps
-#         help="Diffusion denoising steps, more steps results in higher accuracy but slower inference speed.",
-#     )
-
-#     # resolution setting
-#     parser.add_argument("--seed", type=int, default=None, help="Random seed.")
-
-#     parser.add_argument(
-#         "--repo",
-#         type=str,
-#         default=None,
-#         required=True,
-#         help="Path to pretrained model or model identifier from huggingface.co/models.",
-#     )
-#     parser.add_argument(
-#         "--image_encoder_path",
-#         type=str,
-#         default=None,
-#         required=True,
-#         help="Path to pretrained model or model identifier from huggingface.co/models.",
-#     )
-#     parser.add_argument(
-#         "--controlnet_model_name_or_path", type=str, required=True, help="Path to original controlnet."
-#     )
-#     parser.add_argument(
-#         "--annotator_ckpts_path", type=str, required=True, help="Path to depth inpainting model."
-#     )
-#     parser.add_argument(
-#         "--manga_reference_unet_path", type=str, required=True, help="Path to depth inpainting model."
-#     )
-#     parser.add_argument(
-#         "--manga_main_model_path", type=str, required=True, help="Path to depth inpainting model."
-#     )
-#     parser.add_argument(
-#         "--manga_controlnet_model_path", type=str, required=True, help="Path to depth inpainting model."
-#     )
-#     parser.add_argument(
-#         "--point_net_path", type=str, required=True, help="Path to depth inpainting model."
-#     )
-#     parser.add_argument(
-#         "--input_reference_paths",
-#         nargs='+',
-#         default=None,
-#         help="input_image_paths",
-#     )
-#     parser.add_argument(
-#         "--input_lineart_paths",
-#         nargs='+',
-#         default=None,
-#         help="lineart_paths",
-#     )
-#     parser.add_argument(
-#         "--point_ref_paths",
-#         type=str,
-#         default=None,
-#         nargs="+",
-#     )
-#     parser.add_argument(
-#         "--point_lineart_paths",
-#         type=str,
-#         default=None,
-#         nargs="+",
-#     )
-#     parser.add_argument(
-#         "--is_lineart",
-#         action="store_true",
-#         default=False
-#     )
-#     parser.add_argument(
-#         "--guidance_scale_ref",
-#         type=float,
-#         default=1e-4,
-#         help="guidance scale for reference image",
-#     )
-#     parser.add_argument(
-#         "--guidance_scale_point",
-#         type=float,
-#         default=1e-4,
-#         help="guidance scale for points",
-#     )
 
 def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,image_encoder_path,device,
                  ckpt_path,original_config_file,sd_config):
@@ -139,26 +46,6 @@ def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,ima
     noise_scheduler = DDIMScheduler.from_pretrained(repo,subfolder='scheduler')
     vae=pipe.vae
 
-
-    # vae = AutoencoderKL.from_pretrained(
-    #     repo,
-    #     subfolder='vae'
-    # )
-
-
-    # denoising_unet = UNet2DConditionModel.from_pretrained(
-    #     repo,subfolder="unet",
-    #     in_channels=in_channels_denoising_unet,
-    #     low_cpu_mem_usage=False,
-    #     ignore_mismatched_sizes=True
-    # )
-            
-    # reference_unet = RefUNet2DConditionModel.from_pretrained(
-    #     repo,subfolder="unet",
-    #     in_channels=in_channels_reference_unet,
-    #     low_cpu_mem_usage=False,
-    #     ignore_mismatched_sizes=True
-    # )
 
     Unet=pipe.unet
 
@@ -183,9 +70,21 @@ def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,ima
     reference_unet.load_state_dict(
         Unet.state_dict(),strict=False,)
 
-    refnet_tokenizer = CLIPTokenizer.from_pretrained(image_encoder_path)
-    refnet_text_encoder = CLIPTextModel.from_pretrained(image_encoder_path)
-    refnet_image_encoder = CLIPVisionModelWithProjection.from_pretrained(image_encoder_path)
+    text_encoder_sd = load_file(image_encoder_path)
+    
+    origin_repo=os.path.join(current_node_path,"clip")
+    refnet_tokenizer = CLIPTokenizer.from_pretrained(origin_repo)
+
+    refnet_text_config=CLIPTextConfig.from_pretrained(origin_repo,local_files_only=True)
+    refnet_image_config=CLIPVisionConfig.from_pretrained(origin_repo,local_files_only=True)
+   
+
+    refnet_text_encoder = CLIPTextModel(refnet_text_config)
+    refnet_text_encoder.load_state_dict(text_encoder_sd, strict=False)
+    refnet_image_encoder = CLIPVisionModelWithProjection(refnet_image_config)
+    refnet_image_encoder.load_state_dict(text_encoder_sd, strict=False)
+    del text_encoder_sd
+
     print("load controlnet")
     controlnet=ControlNetModel.from_unet(Unet)
 
