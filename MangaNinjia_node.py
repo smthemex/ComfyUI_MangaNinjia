@@ -40,7 +40,7 @@ class MangaNinjiaLoader:
     CATEGORY = "MangaNinjia"
 
     def loader_main(self,checkpoint,clip,controlnet):
-        original_config_file=os.path.join(folder_paths.models_dir,"configs","v1-inference.yaml")
+        original_config_file=os.path.join(current_node_path,"configs","v1-inference.yaml")
         sd_config=os.path.join(current_node_path,"sd15_repo")
         if checkpoint!="none":
             ckpt_path=folder_paths.get_full_path("checkpoints",checkpoint)
@@ -153,10 +153,10 @@ class MangaNinjiaSampler:
 
 NODE_CLASS_MAPPINGS = {
     "MangaNinjiaLoader":MangaNinjiaLoader,
-    "MangaNinjiaSampler":MangaNinjiaSampler,
-}
+    "MangaNinjiaSampler":MangaNinjiaSampler,}
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "MangaNinjiaLoader":"MangaNinjiaLoader",
     "MangaNinjiaSampler":"MangaNinjiaSampler",
+
 }
