@@ -2,10 +2,11 @@
 ComfyUI_MangaNinjia is a ComfyUI node of [MangaNinja](https://github.com/ali-vilab/MangaNinjia) which‌ is a " Line Art Colorization with Precise Reference Following " method。
 
 # update
-* use single clip now 改成使用单体clip_l模型
+* Adding a manual reference point node, my front-end skills are almost zeroBy using this node, the coordinate reference value can be adjusted to around 20
+* 添加一个手动的参考点节点，因为我的前端技术狗屎一样,使用该节点可以将坐标参考的数值调到20左右,欢迎提交PR修改该节点;
+* 使用方法:拉两个参考点节点,然后点击按钮加载参考图和线稿,选中其中的画布,鼠标左键是标记坐标点,右键取消上一次,中键全部取消,下载按钮则是下载json文件用.假设你2张图都处理了,获得了2个json文件,将两个json文件的绝对路径填入地址栏,即可使用参考点模式.
+* Usage: Pull two reference point nodes, then click the button to load the reference image and line draft, select the canvas, left click to mark the coordinate points, right-click to cancel the previous one, middle click to cancel all, and the download button is for downloading JSON files Assuming you have processed both images and obtained two JSON files, fill in the absolute paths of the two JSON files in the address bar to use the reference point mode 
 
-* 坐标参考在comfy里实现麻烦，主要是要前端实现gradio的蒙版多图层，我就偷懒用一个蒙版吧。 如果使用外接蒙版（在参考图和线稿同一物理位置，用蒙版编辑点一个点）作为位置参考，guidance_scale_point>15,guidance_scale_ref>9,如果不使用，则guidance_scale_point>9,guidance_scale_ref>15，参数自己调节到合适的。guidance_scale_point是倾向于用线稿和参考图的位置点来上色，guidance_scale_ref是主要用参考图来上色;
-* Coordinate reference is troublesome to implement in comfy, mainly to implement the multi-layer mask of gradio on the front end, so I'm lazy to use a mask. If you use an external mask (at the same physical location as the reference diagram and line artwork, edit a point with the mask) as the position reference, guidance_scale_point> 15,guidance_scale_ref>9, and if you don't, guidance_scale_point>9,guidance_scale_ref>15. The parameters are adjusted to the appropriate one. guidance_scale_point tend to use line drawings and reference drawings for coloring, guidance_scale_ref mainly use reference drawings for coloring;
 
 # 1. Installation
 
@@ -47,9 +48,9 @@ pip install -r requirements.txt
 
   
 # 5.Example
-* old
-![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/exampleA.png)
 * NEW
+![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/example.png)
+* old
 ![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/exampleB.png)
 
 
