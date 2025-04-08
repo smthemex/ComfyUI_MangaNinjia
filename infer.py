@@ -145,7 +145,7 @@ def nijia_loader(MangaNinjia_weigths_path,repo,controlnet_model_name_or_path,ima
     pipe.enable_xformers_memory_efficient_attention()
     return pipe,preprocessor,refnet_tokenizer,refnet_text_encoder,refnet_image_encoder,vae
 
-def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_lineart_paths,denoise_steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point,device):
+def infer_main (model,ref_image_list,lineart_image_list,ref_value,lineart_value,denoise_steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point,device):
      #pre data
     pipe=model.get("pipe")
     
@@ -200,29 +200,21 @@ def infer_main (model,ref_image_list,lineart_image_list,point_ref_paths,point_li
         image_list=[]
         lineart_list=[]
         for i in range(len(ref_image_list)):
-            # save path
-           
-            # rgb_name_prefix  =''.join(random.choice("0123456789") for _ in range(6))
-            # pred_name_base = rgb_name_prefix + "_colorized"
-            # lineart_name_base = rgb_name_prefix + "_lineart"
-            # colored_save_path = os.path.join(
-            #     output_dir, f"{pred_name_base}.png"
-            # )
-            # lineart_save_path = os.path.join(
-            #     output_dir, f"{lineart_name_base}.png"
-            # )
-            if point_ref_paths is not None:# 手动映射，比较讨厌
-                point_ref_path = point_ref_paths[i]
-                point_lineart_path = point_lineart_paths[i]
-                
-                point_main = point_ref_path.unsqueeze(0)
-                point_ref = point_lineart_path.unsqueeze(0)
+        
+            matrix1 = np.zeros((512, 512), dtype=np.uint8)
+            matrix2 = np.zeros((512, 512), dtype=np.uint8)
+            if ref_value is not None:# 手动映射，比较讨厌
+                 for index, (coords_ref,coords_base) in enumerate(zip(ref_value,lineart_value)):
+                    y1, x1 = coords_ref[0], coords_ref[1]
+                    y2, x2 = coords_base[0], coords_base[1]
+                    #print(f"({x1}, {y1}) -> ({x2}, {y2})")
+                    matrix1[y1, x1] = index + 1
+                    matrix2[y2, x2] = index + 1
+             
                 # point_main = torch.from_numpy(np.load(point_lineart_path)).unsqueeze(0).unsqueeze(0)
-            else:
-                matrix1 = np.zeros((512, 512), dtype=np.uint8)
-                matrix2 = np.zeros((512, 512), dtype=np.uint8)
-                point_ref = torch.from_numpy(matrix1).unsqueeze(0).unsqueeze(0)
-                point_main = torch.from_numpy(matrix2).unsqueeze(0).unsqueeze(0)
+               
+            point_ref = torch.from_numpy(matrix1).unsqueeze(0).unsqueeze(0)
+            point_main = torch.from_numpy(matrix2).unsqueeze(0).unsqueeze(0)
      
             ref_image=ref_image_list[i]
             target_image =lineart_image_list[i]
@@ -354,3 +346,11 @@ def latent2pil(vae,rgb_latent,rgb_latent_scale_factor):
     img_pred_np = chw2hwc(img_pred_np)
     img_pred_pil = Image.fromarray(img_pred_np)
     return img_pred_pil
+
+
+def string_to_np_array(coord_string):
+    coord_string = coord_string.strip('[]')
+    coords = re.findall(r'\d+', coord_string)
+    coords = list(map(int, coords))
+    coord_array = np.array(coords).reshape(-1, 2)
+    return coord_array
