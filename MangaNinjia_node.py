@@ -220,7 +220,7 @@ class MarkImageNode:
 
             # 使用 clickedPoints 数据
             clicked_points = node_instances.get(node_id)
-            print(f"Using clickedPoints in process_canvas_image: {clicked_points}")
+            #print(f"Using clickedPoints in process_canvas_image: {clicked_points}")
          
         
             # 示例：将 clickedPoints 数据与画布图像结合处理
@@ -275,7 +275,7 @@ def process_json(json_data):
 @PromptServer.instance.routes.post("/upload/clickedPoints")
 async def upload_clicked_points(request):
 
-    print("Custom route '/api//upload/clickedPoints' added successfully.")
+    #print("Custom route '/api//upload/clickedPoints' added successfully.")
     # 打印当前路由
     # for route in server_instance.app.router.routes():
     #     print(f"Route: {route.method} {route.resource}")
