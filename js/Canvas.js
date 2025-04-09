@@ -1,5 +1,6 @@
 
 export class Canvas {
+
     constructor(node, widget) {
         this.node = node;
         this.widget = widget;
@@ -24,7 +25,6 @@ export class Canvas {
         this.gridCacheCtx = this.gridCache.getContext('2d', {
             alpha: false
         });
-        
         this.renderAnimationFrame = null;
         this.lastRenderTime = 0;
         this.renderInterval = 1000 / 60;
@@ -37,7 +37,8 @@ export class Canvas {
         this.initCanvas();
         this.setupEventListeners();
         this.initNodeData();
-        
+
+
         // 添加混合模式列表
         this.blendModes = [
             { name: 'normal', label: '正常' },
@@ -98,7 +99,9 @@ export class Canvas {
         this.render();
     }
 
+     
 
+   
 
     initCanvas() {
         this.canvas.width = this.width;
@@ -548,6 +551,11 @@ export class Canvas {
     getClickedPoints() {
         return this.clickedPoints;
     }
+    generateUUID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });}
 
     drawCachedGrid() {
         if (this.gridCache.width !== this.width || 
@@ -611,8 +619,17 @@ export class Canvas {
         ctx.fill();
         ctx.stroke();
     }
-    async saveToServer(fileName,ifdownload=false) {
+    async saveToServer(fileName) {
         return new Promise((resolve) => {
+            // 使用图片名称作为节点 ID
+           
+            const nodeId = fileName;
+            if (!nodeId) {
+                console.error("Node ID is not available. Cannot save data.");
+                resolve(false);
+                return;
+            }
+
             // 创建临时画布
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = this.width;
@@ -646,7 +663,7 @@ export class Canvas {
                 const formData = new FormData();
                 formData.append("image", blob, fileName);
                 formData.append("overwrite", "true");
-        
+                const clickedPoints = this.getClickedPoints(); // 获取点击的点数据
                 try {
                     const resp = await fetch("/upload/image", {
                         method: "POST",
@@ -654,7 +671,8 @@ export class Canvas {
                     });
 
                     if (resp.status === 200) {
-                        this.saveClickedPointsAsJson(fileName, ifdownload);
+                        
+                        this.sendClickedPointsToServer(nodeId,clickedPoints)
                         resolve(true);
                     } else {
                         console.error("保存失败:", resp.status);
@@ -669,6 +687,32 @@ export class Canvas {
         
     }
  
+    async sendClickedPointsToServer(nodeId, clickedPoints) {
+        // console.log("当前鼠标位置:", { mouseX: this.mouseX, mouseY: this.mouseY });
+        console.log("发送给服务器的点数据:", clickedPoints);
+        
+            
+        try {
+            const response = await fetch("/api/upload/clickedPoints", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({node_id:nodeId, clickedPoints }),  // 传递节点 ID 和数据
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log("Server response:", result);
+            } else {
+                console.error("Failed to send clickedPoints. Status:", response.status);
+            }
+        } catch (error) {
+            console.error("Error sending clickedPoints:", error);
+            resolve(false);
+        }
+            
+    }
     
 
     saveClickedPointsAsJson(fileName, shouldDownload = false) {
