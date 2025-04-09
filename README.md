@@ -2,10 +2,9 @@
 ComfyUI_MangaNinjia is a ComfyUI node of [MangaNinja](https://github.com/ali-vilab/MangaNinjia) which‌ is a " Line Art Colorization with Precise Reference Following " method。
 
 # update
-* Adding a manual reference point node, my front-end skills are almost zeroBy using this node, the coordinate reference value can be adjusted to around 20
-* 添加一个手动的参考点节点，因为我的前端技术狗屎一样,使用该节点可以将坐标参考的数值调到20左右,欢迎提交PR修改该节点;
-* 使用方法:拉两个参考点节点,然后点击按钮加载参考图和线稿,选中其中的画布,鼠标左键是标记坐标点,右键取消上一次,中键全部取消,下载按钮则是下载json文件用.假设你2张图都处理了,获得了2个json文件,将两个json文件的绝对路径填入地址栏,即可使用参考点模式.
-* Usage: Pull two reference point nodes, then click the button to load the reference image and line draft, select the canvas, left click to mark the coordinate points, right-click to cancel the previous one, middle click to cancel all, and the download button is for downloading JSON files Assuming you have processed both images and obtained two JSON files, fill in the absolute paths of the two JSON files in the address bar to use the reference point mode 
+* 改进参考点的前端方法，只需要在参考和线稿图上点选对应位置的点即可，唯一要注意的是，2个节点的markimage_image栏里的canvas_image.png名称必须不一样，比如有个是canvas_image.png，另一个需要改成canvas_image1.png或则其他，请使用json工作流
+* To improve the front-end method of reference points, simply click on the corresponding points on the reference and line draft images. The only thing to note is that the name of the canvas_image.png in the markimage_image column of the two nodes must be different. For example, one node needs to be named canvas_image.png, while the other needs to be changed to canvas_image1. png or something else. Please use the JSON workflow
+
 
 
 # 1. Installation
@@ -48,10 +47,10 @@ pip install -r requirements.txt
 
   
 # 5.Example
-* NEW
-![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/example.png)
 * old
-![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/exampleB.png)
+![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/example.png)
+* NEW
+![](https://github.com/smthemex/ComfyUI_MangaNinjia/blob/main/example_new.png)
 
 
 # 6.Citation
