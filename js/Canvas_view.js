@@ -152,8 +152,7 @@ async function createCanvasWidget(node, widget, app) {
     };
 
    
-    let isDownloadEnabled= false;
-
+   
     // 修改控制面板，使其高度自适应
     const controlPanel = $el("div.painterControlPanel", {}, [
         $el("div.controls.painter-controls", {
@@ -197,37 +196,33 @@ async function createCanvasWidget(node, widget, app) {
             
             $el("button.painter-button", {
                 textContent: "Remove Layer",
-                onclick: () => {
+                onclick: (event) => {
                     const index = canvas.layers.indexOf(canvas.selectedLayer);
                     canvas.removeLayer(index);
+                    event.target.classList.toggle('clicked');
                 }
             }),
            
             $el("button.painter-button", {
                 textContent: "Mirror H",
-                onclick: () => {
+                onclick: (event) => {
                     canvas.mirrorHorizontal();
+                    event.target.classList.toggle('clicked');
                 }
             }),
             // 添加垂直镜像按钮
             $el("button.painter-button", {
                 textContent: "Mirror V",
-                onclick: () => {
-                    canvas.mirrorVertical();
-                }
-            }), 
-            // 添加下载判断按钮
-            $el("button.painter-button", {
-                textContent: "Toggle Download",
                 onclick: (event) => {
-                    isDownloadEnabled = !isDownloadEnabled;
-                    console.log("Download enabled:", isDownloadEnabled);
+                    canvas.mirrorVertical();
                     event.target.classList.toggle('clicked');
                 }
-            }), 
-
+            }),
+       
+        
         ])
     ]);
+
 
     // 创建ResizeObserver来监控控制面板的高度变化
     const resizeObserver = new ResizeObserver((entries) => {
@@ -333,7 +328,7 @@ async function createCanvasWidget(node, widget, app) {
     const mainWidget = node.addDOMWidget("mainContainer", "widget", mainContainer);
 
     // 设置节点的默认大小
-    node.size = [500, 500]; // 设置初始大小为正方形
+    node.size = [512, 512]; // 设置初始大小为正方形
 
     // 在执行开始时保存数据
     api.addEventListener("execution_start", async () => {
@@ -353,7 +348,7 @@ async function createCanvasWidget(node, widget, app) {
     // 移除原来在 saveToServer 中的缓存清理
     const originalSaveToServer = canvas.saveToServer;
     canvas.saveToServer = async function(fileName) {
-        const result = await originalSaveToServer.call(this, fileName,isDownloadEnabled);
+        const result = await originalSaveToServer.call(this, fileName);
         // 移除这里的缓存清理
         // ImageCache.clear();
         return result;
@@ -364,7 +359,6 @@ async function createCanvasWidget(node, widget, app) {
         panel: controlPanel
     };
 }
-
 
 
 
