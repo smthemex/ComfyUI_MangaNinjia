@@ -9,17 +9,23 @@ import hashlib
 import traceback
 import time
 import json
+from aiohttp import web
+from aiohttp import web
+from server import PromptServer
 
-
+import uuid
 from .node_utils import  load_images,equalize_lists,tensor2pil_list
 import folder_paths
 from .infer import infer_main,nijia_loader
+
+server_instance = PromptServer.instance
 
 MAX_SEED = np.iinfo(np.int32).max
 current_node_path = os.path.dirname(os.path.abspath(__file__))
 device = torch.device(
         "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+node_instances = {}
 # add checkpoints dir
 MangaNinjia_weigths_path = os.path.join(folder_paths.models_dir, "MangaNinjia")
 if not os.path.exists(MangaNinjia_weigths_path):
@@ -123,8 +129,8 @@ class MangaNinjiaSampler:
                 "is_lineart": ("BOOLEAN", {"default": True},),
                          },
             "optional": {
-                #"mask": ("MASK",),# B H W 
-                "xy_data": ("MINJIA_DATA",),
+                "xy_data_ref": ("MINJIA_DATA",),
+                "xy_data_lineart": ("MINJIA_DATA",),
             }
 
         }
@@ -136,24 +142,22 @@ class MangaNinjiaSampler:
     
     def sampler_main(self, model,image,lineart_image,seed,width,height,guidance_scale_ref,guidance_scale_point,steps,is_lineart,**kwargs):
         
-        xy_data=kwargs.get("xy_data")
-        #lineart_mask=kwargs.get("lineart_mask")
-
+        xy_data_ref=kwargs.get("xy_data_ref")
+        xy_data_lineart=kwargs.get("xy_data_lineart")
+       
+        print(xy_data_ref,xy_data_lineart)
         ref_image_list=tensor2pil_list(image,width,height)
         lineart_image_list=tensor2pil_list(lineart_image,width,height)
         ref_image_list,lineart_image_list=equalize_lists(ref_image_list,lineart_image_list)
         ref_value,lineart_value=None,None
-        if isinstance(xy_data,dict) :
-            if xy_data.get("lineart_value") is not None  and xy_data.get("ref_value") is not None :
-                lineart_value=xy_data.get("lineart_value")
-                ref_value=xy_data.get("ref_value")
-                if len (lineart_value)!=len (ref_value):
-                    min_length = min(len(lineart_value), len(ref_value))
-                    lineart_value = lineart_value[:min_length]
-                    ref_value = ref_value[:min_length]
-
-        
-            
+        if xy_data_ref is not None and xy_data_lineart is not None:
+            lineart_value=xy_data_lineart
+            ref_value=xy_data_ref
+            if len (lineart_value)!=len (ref_value):
+                min_length = min(len(lineart_value), len(ref_value))
+                lineart_value = lineart_value[:min_length]
+                ref_value = ref_value[:min_length]
+ 
 
         print("***********Start MangaNinjia Sampler**************")
         iamge,lineart=infer_main(model,ref_image_list,lineart_image_list,ref_value,lineart_value,steps,seed,is_lineart,guidance_scale_ref,guidance_scale_point,device)
@@ -172,25 +176,16 @@ class MarkImageNode:
         'persistent_cache': {},
         'last_execution_id': None
     }
+    
+    
     def __init__(self):
         pass
-   
-    def get_execution_id(self):
-        """获取当前工作流执行ID"""
-        try:
-            # 可以使用时间戳或其他唯一标识
-            return str(int(time.time() * 1000))
-        except Exception as e:
-            print(f"Error getting execution ID: {str(e)}")
-            return None
 
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
                 "markimage_image": ("STRING", {"default": "canvas_image.png"}),
-                "ref_coordinates": ("STRING", {"default": "canvas_image.json"}),
-                "lineart_coordinates": ("STRING", {"default": "canvas_image.json"}),
                 "trigger": ("INT", {"default": 0, "min": 0, "max": 99999999, "step": 1, "hidden": True}),
             },
         }
@@ -200,11 +195,9 @@ class MarkImageNode:
     FUNCTION = "process_canvas_image"
     CATEGORY = "MangaNinjia"
 
-    def process_canvas_image(self, markimage_image,ref_coordinates,lineart_coordinates,trigger):
-
+    def process_canvas_image(self, markimage_image,trigger):
+        
         try:
-            current_execution = self.get_execution_id()
-            print(f"Processing canvas image, execution ID: {current_execution}")
             try:
                 # 尝试读取画布图像
                 path_image = folder_paths.get_annotated_filepath(markimage_image)
@@ -219,14 +212,22 @@ class MarkImageNode:
                     alpha = image[..., 3:]
                     image = rgb * alpha + (1 - alpha) * 0.5
                 processed_image = torch.from_numpy(image)[None,]
-              
+                node_id = os.path.basename(path_image)
             except Exception as e:
                 # 如果读取失败，创建白色画布
                 processed_image = torch.ones((1, 512, 512, 3), dtype=torch.float32)
+                node_id=''
 
-
-            return (processed_image,{"lineart_value":process_json(lineart_coordinates),"ref_value":process_json(ref_coordinates)})
-                
+            # 使用 clickedPoints 数据
+            clicked_points = node_instances.get(node_id)
+            print(f"Using clickedPoints in process_canvas_image: {clicked_points}")
+         
+        
+            # 示例：将 clickedPoints 数据与画布图像结合处理
+            if clicked_points:
+                return (processed_image,process_json(clicked_points),)
+            else:
+                return (processed_image, None,)  
         except Exception as e:
             print(f"Error in process_canvas_image: {str(e)}")
             traceback.print_exc()
@@ -239,22 +240,66 @@ class MarkImageNode:
             m.update(f.read())
         return m.digest().hex()
 
-def process_json(file_path,):
-        if file_path:
-            if os.path.exists(file_path) and file_path.endswith('.json'):
-                with open(file_path, 'r', encoding='utf-8') as file:
-                    data = json.load(file)
+def process_json(json_data):
+    if not json_data:
+        return None
 
-                # 按 number 字段排序
-                sorted_data = sorted(data, key=lambda item: item['number'])
+    # 类型检查和数据验证
+    if not isinstance(json_data, list):
+        print("Error: Expected a list of dictionaries.")
+        return None
 
-                # 转换为 [[x的int值, y的int值], ...] 格式
-                result = [[int(item['x']), int(item['y'])] for item in sorted_data]
-                return result
-            else:
-                return None
+    for item in json_data:
+        if not isinstance(item, dict) or 'number' not in item:
+            print(f"Skipping invalid item: {item}")
+            continue
+
+    try:
+        # 对数据进行排序
+        sorted_data = sorted(
+            [item for item in json_data if isinstance(item, dict) and 'number' in item],
+            key=lambda item: item['number']
+        )
+
+        # 转换为 [[x的int值, y的int值], ...] 格式
+        result = [[int(item['x']), int(item['y'])] for item in sorted_data if 'x' in item and 'y' in item]
+        print(f"Processed JSON data: {result}")
+        return result
+    except Exception as e:
+        print(f"Error processing JSON data: {str(e)}")
+        return None
+    
+
+
+# 动态添加路由到服务器
+@PromptServer.instance.routes.post("/upload/clickedPoints")
+async def upload_clicked_points(request):
+
+    print("Custom route '/api//upload/clickedPoints' added successfully.")
+    # 打印当前路由
+    # for route in server_instance.app.router.routes():
+    #     print(f"Route: {route.method} {route.resource}")
+   
+    try:
+        # 获取 JSON 数据
+        json_data = await request.json()
+        clicked_points = json_data.get("clickedPoints", [])
+        node_id = json_data.get("node_id")  # 前端需要传递节点的唯一标识
+        #print(f"Received clickedPoints for node {node_id}: {clicked_points}")
+
+        # 根据 node_id 存储数据
+        if node_id:
+            node_instances[node_id] = clicked_points
         else:
-            return None
+            print(f"Node with ID {node_id} not found.")
+        
+            
+        
+        return web.json_response({"status": "success", "message": "Clicked points received."})
+    except Exception as e:
+        print(f"Error processing clickedPoints: {e}")
+        return web.json_response({"status": "error", "message": str(e)}, status=500)
+
 
 WEB_DIRECTORY = "./js"
 
