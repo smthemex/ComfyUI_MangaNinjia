@@ -1,0 +1,855 @@
+{
+  "id": "6cd21694-058e-4271-9530-02362f0188bf",
+  "revision": 0,
+  "last_node_id": 22,
+  "last_link_id": 30,
+  "nodes": [
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        -947.0392939947906,
+        633.8462269002679
+      ],
+      "size": [
+        308.88003125614887,
+        389.55556111944935
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            2,
+            4,
+            28
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "slot_index": 1,
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "Node name for S&T": "LoadImage"
+      },
+      "widgets_values": [
+        "mn_ref.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "mn_ref.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 4,
+      "type": "VAEEncode",
+      "pos": [
+        -156.9144805727674,
+        582.7850791255031
+      ],
+      "size": [
+        248.42932026871082,
+        62.19854747537434
+      ],
+      "flags": {},
+      "order": 9,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pixels",
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 24
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            8
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEEncode",
+        "Node name for S&T": "VAEEncode"
+      }
+    },
+    {
+      "id": 5,
+      "type": "LoadImage",
+      "pos": [
+        -970.2064635682373,
+        77.40545979653831
+      ],
+      "size": [
+        326.1001835487487,
+        409.4248587766925
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            5,
+            9
+          ]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "slot_index": 1,
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "Node name for S&T": "LoadImage"
+      },
+      "widgets_values": [
+        "mn_lineart.png",
+        "image"
+      ],
+      "widgets_values_named": {
+        "image": "mn_lineart.png",
+        "upload": "image"
+      }
+    },
+    {
+      "id": 6,
+      "type": "EmptyLatentImage",
+      "pos": [
+        335.32802770325907,
+        303.70584302114844
+      ],
+      "size": [
+        240,
+        120
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            15
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptyLatentImage",
+        "Node name for S&T": "EmptyLatentImage"
+      },
+      "widgets_values": [
+        512,
+        512,
+        1
+      ],
+      "widgets_values_named": {
+        "width": 512,
+        "height": 512,
+        "batch_size": 1
+      }
+    },
+    {
+      "id": 7,
+      "type": "MangaNinjiaLoader",
+      "pos": [
+        -89.98620496807075,
+        358.5207611495582
+      ],
+      "size": [
+        313.12291664265956,
+        117.98744119532321
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "manganinjia",
+          "type": "MANGANINJIA",
+          "slot_index": 0,
+          "links": [
+            6
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MangaNinjiaLoader",
+        "Node name for S&T": "MangaNinjiaLoader"
+      },
+      "widgets_values": [
+        ""
+      ],
+      "widgets_values_named": {
+        "model_dir": ""
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 8,
+      "type": "MangaNinjiaPoints",
+      "pos": [
+        -566.6658310456819,
+        682.2480488525871
+      ],
+      "size": [
+        320.7433406686314,
+        558.5716097572462
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "points",
+          "type": "MINJIA_POINTS",
+          "slot_index": 0,
+          "links": [
+            10
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MangaNinjiaPoints",
+        "Node name for S&T": "MangaNinjiaPoints"
+      },
+      "widgets_values": [
+        "[{\"x\":391,\"y\":256,\"number\":0},{\"x\":355,\"y\":59,\"number\":1},{\"x\":264,\"y\":193,\"number\":2},{\"x\":315,\"y\":168,\"number\":3},{\"x\":404,\"y\":214,\"number\":4},{\"x\":405,\"y\":405,\"number\":5},{\"x\":279,\"y\":498,\"number\":6},{\"x\":270,\"y\":294,\"number\":7},{\"x\":439,\"y\":183,\"number\":8},{\"x\":461,\"y\":261,\"number\":9}]",
+        ""
+      ],
+      "widgets_values_named": {
+        "points_json": "[{\"x\":391,\"y\":256,\"number\":0},{\"x\":355,\"y\":59,\"number\":1},{\"x\":264,\"y\":193,\"number\":2},{\"x\":315,\"y\":168,\"number\":3},{\"x\":404,\"y\":214,\"number\":4},{\"x\":405,\"y\":405,\"number\":5},{\"x\":279,\"y\":498,\"number\":6},{\"x\":270,\"y\":294,\"number\":7},{\"x\":439,\"y\":183,\"number\":8},{\"x\":461,\"y\":261,\"number\":9}]",
+        "points_canvas": ""
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 9,
+      "type": "MangaNinjiaPoints",
+      "pos": [
+        -568.647818631141,
+        60.80860469084169
+      ],
+      "size": [
+        310.4163723426562,
+        498.81500335519706
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "points",
+          "type": "MINJIA_POINTS",
+          "slot_index": 0,
+          "links": [
+            11
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MangaNinjiaPoints",
+        "Node name for S&T": "MangaNinjiaPoints"
+      },
+      "widgets_values": [
+        "[{\"x\":179,\"y\":284,\"number\":0},{\"x\":243,\"y\":28,\"number\":1},{\"x\":71,\"y\":247,\"number\":2},{\"x\":114,\"y\":193,\"number\":3},{\"x\":207,\"y\":219,\"number\":4},{\"x\":245,\"y\":481,\"number\":5},{\"x\":89,\"y\":505,\"number\":6},{\"x\":120,\"y\":388,\"number\":7},{\"x\":263,\"y\":164,\"number\":8},{\"x\":299,\"y\":302,\"number\":9}]",
+        ""
+      ],
+      "widgets_values_named": {
+        "points_json": "[{\"x\":179,\"y\":284,\"number\":0},{\"x\":243,\"y\":28,\"number\":1},{\"x\":71,\"y\":247,\"number\":2},{\"x\":114,\"y\":193,\"number\":3},{\"x\":207,\"y\":219,\"number\":4},{\"x\":245,\"y\":481,\"number\":5},{\"x\":89,\"y\":505,\"number\":6},{\"x\":120,\"y\":388,\"number\":7},{\"x\":263,\"y\":164,\"number\":8},{\"x\":299,\"y\":302,\"number\":9}]",
+        "points_canvas": ""
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 10,
+      "type": "MangaNinjiaApply",
+      "pos": [
+        281.3966538775356,
+        497.0804580147518
+      ],
+      "size": [
+        318.8105406822546,
+        289.99998336341133
+      ],
+      "flags": {},
+      "order": 10,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "manganinjia",
+          "type": "MANGANINJIA",
+          "link": 6
+        },
+        {
+          "name": "reference_latent",
+          "type": "LATENT",
+          "link": 8
+        },
+        {
+          "name": "lineart",
+          "type": "IMAGE",
+          "link": 9
+        },
+        {
+          "name": "clip_vision",
+          "shape": 7,
+          "type": "CLIP_VISION_OUTPUT",
+          "link": 19
+        },
+        {
+          "name": "empty_prompt",
+          "shape": 7,
+          "type": "CONDITIONING",
+          "link": null
+        },
+        {
+          "name": "points_ref",
+          "shape": 7,
+          "type": "MINJIA_POINTS",
+          "link": 10
+        },
+        {
+          "name": "points_target",
+          "shape": 7,
+          "type": "MINJIA_POINTS",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "slot_index": 0,
+          "links": [
+            12
+          ]
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "slot_index": 1,
+          "links": [
+            13
+          ]
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "slot_index": 2,
+          "links": [
+            14
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "MangaNinjiaApply",
+        "Node name for S&T": "MangaNinjiaApply"
+      },
+      "widgets_values": [
+        9,
+        15,
+        0.24,
+        512
+      ],
+      "widgets_values_named": {
+        "guidance_scale_ref": 9,
+        "guidance_scale_point": 15,
+        "lineart_threshold": 0.24,
+        "point_size": 512
+      },
+      "color": "#322",
+      "bgcolor": "#533"
+    },
+    {
+      "id": 11,
+      "type": "KSampler",
+      "pos": [
+        729.0094449812026,
+        264.72266768692555
+      ],
+      "size": [
+        240,
+        262
+      ],
+      "flags": {},
+      "order": 11,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 12
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 13
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 14
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "slot_index": 0,
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler",
+        "Node name for S&T": "KSampler"
+      },
+      "widgets_values": [
+        44,
+        "fixed",
+        20,
+        7.5,
+        "euler",
+        "normal",
+        1
+      ],
+      "widgets_values_named": {
+        "seed": 44,
+        "control_after_generate": "fixed",
+        "steps": 20,
+        "cfg": 7.5,
+        "sampler_name": "euler",
+        "scheduler": "normal",
+        "denoise": 1
+      }
+    },
+    {
+      "id": 12,
+      "type": "VAEDecode",
+      "pos": [
+        1051.3699577755597,
+        285.8607750939105
+      ],
+      "size": [
+        240,
+        120
+      ],
+      "flags": {},
+      "order": 12,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 16
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 25
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": [
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode",
+        "Node name for S&T": "VAEDecode"
+      }
+    },
+    {
+      "id": 13,
+      "type": "SaveImage",
+      "pos": [
+        623.3253126126071,
+        587.0754610350625
+      ],
+      "size": [
+        592.7774145578849,
+        611.0559880365796
+      ],
+      "flags": {},
+      "order": 13,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "slot_index": 0,
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&T": "SaveImage"
+      },
+      "widgets_values": [
+        "mn_e2e_workflow"
+      ],
+      "widgets_values_named": {
+        "filename_prefix": "mn_e2e_workflow"
+      }
+    },
+    {
+      "id": 14,
+      "type": "CLIPVisionEncode",
+      "pos": [
+        -59.628874793634964,
+        896.7808907964097
+      ],
+      "size": [
+        270,
+        78
+      ],
+      "flags": {},
+      "order": 8,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip_vision",
+          "type": "CLIP_VISION",
+          "link": 21
+        },
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 28
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CLIP_VISION_OUTPUT",
+          "type": "CLIP_VISION_OUTPUT",
+          "links": [
+            19
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPVisionEncode"
+      },
+      "widgets_values": [
+        "center"
+      ],
+      "widgets_values_named": {
+        "crop": "center"
+      }
+    },
+    {
+      "id": 15,
+      "type": "CLIPVisionLoader",
+      "pos": [
+        -120.32081230786503,
+        731.9005043029443
+      ],
+      "size": [
+        333.88137537446437,
+        112.10560046967427
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "CLIP_VISION",
+          "type": "CLIP_VISION",
+          "links": [
+            21
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CLIPVisionLoader"
+      },
+      "widgets_values": [
+        "clip-vit-large-patch14.safetensors"
+      ],
+      "widgets_values_named": {
+        "clip_name": "clip-vit-large-patch14.safetensors"
+      }
+    },
+    {
+      "id": 17,
+      "type": "VAELoader",
+      "pos": [
+        -158.0862175239635,
+        137.83070015458915
+      ],
+      "size": [
+        270,
+        58
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            24,
+            25
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader"
+      },
+      "widgets_values": [
+        "sd-vae-ft-mse.safetensors"
+      ],
+      "widgets_values_named": {
+        "vae_name": "sd-vae-ft-mse.safetensors"
+      }
+    }
+  ],
+  "links": [
+    [
+      2,
+      3,
+      0,
+      4,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      3,
+      0,
+      8,
+      0,
+      "IMAGE"
+    ],
+    [
+      5,
+      5,
+      0,
+      9,
+      0,
+      "IMAGE"
+    ],
+    [
+      6,
+      7,
+      0,
+      10,
+      0,
+      "MANGANINJIA"
+    ],
+    [
+      12,
+      10,
+      0,
+      11,
+      0,
+      "MODEL"
+    ],
+    [
+      13,
+      10,
+      1,
+      11,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      14,
+      10,
+      2,
+      11,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      15,
+      6,
+      0,
+      11,
+      3,
+      "LATENT"
+    ],
+    [
+      16,
+      11,
+      0,
+      12,
+      0,
+      "LATENT"
+    ],
+    [
+      18,
+      12,
+      0,
+      13,
+      0,
+      "IMAGE"
+    ],
+    [
+      10,
+      8,
+      0,
+      10,
+      5,
+      "MINJIA_POINTS"
+    ],
+    [
+      11,
+      9,
+      0,
+      10,
+      6,
+      "MINJIA_POINTS"
+    ],
+    [
+      21,
+      15,
+      0,
+      14,
+      0,
+      "CLIP_VISION"
+    ],
+    [
+      24,
+      17,
+      0,
+      4,
+      1,
+      "VAE"
+    ],
+    [
+      25,
+      17,
+      0,
+      12,
+      1,
+      "VAE"
+    ],
+    [
+      28,
+      3,
+      0,
+      14,
+      1,
+      "IMAGE"
+    ],
+    [
+      19,
+      14,
+      0,
+      10,
+      3,
+      "CLIP_VISION_OUTPUT"
+    ],
+    [
+      8,
+      4,
+      0,
+      10,
+      1,
+      "LATENT"
+    ],
+    [
+      9,
+      5,
+      0,
+      10,
+      2,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Group",
+      "bounding": [
+        -980.2064635682373,
+        -9.19139530915831,
+        2281.576421343797,
+        1260.0110539189916
+      ],
+      "color": "#3f789e",
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6643423946017555,
+      "offset": [
+        1331.275642413695,
+        117.56509893375927
+      ]
+    },
+    "frontendVersion": "1.58.5"
+  },
+  "version": 0.4
+}
